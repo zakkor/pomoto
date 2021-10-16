@@ -5,6 +5,7 @@
 
   // Local bindings
   let el;
+  $: el && document.body.appendChild(el);
   let markerEl;
 
   export let visible = false;
@@ -98,7 +99,7 @@
     class="absolute {className}"
     class:hidden={prerender && !visible}
     {style}
-    tabindex={0}
+    tabindex={-1}
     on:keyup={event => {
       console.log(event);
       if (event.key === 'Escape') close();
