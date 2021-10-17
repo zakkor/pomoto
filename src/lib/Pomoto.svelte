@@ -77,7 +77,6 @@
   function open() {
     if (referenceEl) reposition();
     visible = true;
-    // TODO: Focus trap
   }
   function close() {
     visible = false;
@@ -87,13 +86,66 @@
     visible ? close() : open();
   }
 
+  // Modal accessibility: focus first element and trap focus inside modal.
+  function attachFocusTrap() {
+    // Focus first focusable element, or dialog element itself.
+    const focusable = el.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    const focusEl = focusable[0] || el;
+    focusEl.focus();
+
+    if (focusable.length === 0) return;
+
+    // If focus were to leave the first element, move focus to last element instead.
+    const onBlur = event => {
+      event.preventDefault();
+      if (event.relatedTarget !== focusable[1]) {
+        focusable[focusable.length - 1].focus();
+      }
+    };
+    focusable[0].addEventListener('blur', onBlur);
+
+    // If focus were to leave the last element, move focus to first element instead.
+    // The "blur" event for the last element is a bit special: if there is nothing else left to focus on the page,
+    // the focus moves to the browser address bar, which cannot be prevented.
+    // To get around this, instead of using the "blur" event, we hijack the Tab key in the "keydown" event instead.
+    const onTab = event => {
+      if (event.key !== 'Tab' || event.shiftKey === true) return;
+      event.preventDefault();
+      focusable[0].focus();
+    };
+    focusable[focusable.length - 1].addEventListener('keydown', onTab);
+
+    return () => {
+      focusable[0].removeEventListener('blur', onBlur);
+      focusable[focusable.length - 1].removeEventListener('keydown', onTab);
+    };
+  }
+
   // Dispatch events: open, afterOpen, close, afterClose
   $: if (visible) {
     dispatch('open');
-    tick().then(() => dispatch('afterOpen'));
+    tick().then(() => {
+      dispatch('afterOpen');
+    });
   } else {
+    // TODO: Why is the close event firing on initial render?
     dispatch('close');
-    tick().then(() => dispatch('afterClose'));
+    tick().then(() => {
+      dispatch('afterClose');
+    });
+  }
+  // Use separate reactive statements for focus trap attach and cleanup to prevent infinite updates.
+  let removeFocusTrap = null;
+  $: if (visible) {
+    tick().then(() => {
+      removeFocusTrap = attachFocusTrap();
+    });
+  }
+  $: if (!visible) {
+    // Cleanup focus trap handlers.
+    removeFocusTrap?.();
+    // When modal closes, return focus to the trigger element.
+    triggerEl?.focus();
   }
 
   onMount(() => {
@@ -120,7 +172,7 @@
     bind:this={el}
     role="dialog"
     aria-modal="true"
-    class="absolute {className} focus:ring-red-500"
+    class="absolute {className}"
     class:hidden={prerender && !visible}
     {style}
     tabindex={-1}
