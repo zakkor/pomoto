@@ -1,37 +1,54 @@
-<script>
+<script lang="ts">
   import { onMount, onDestroy, createEventDispatcher, tick } from 'svelte';
 
   const dispatch = createEventDispatcher();
 
-  // Local bindings
-  let el;
-  $: el && document.body.appendChild(el);
-  let markerEl;
-
   export let visible = false;
-  export let a11y;
-  console.log(a11y);
-  export let prerender = false; // lazy?
+  // Triggers and event listeners:
+  // If both a reference element and a trigger element are passed:
+  // interacting with the trigger will open/close, and the popover will be positioned relative to the reference.
+  // If only a reference element is passed and no trigger element is passed, the reference becomes the trigger (popover behaviour).
+  // If only a trigger element is passed and no reference element is passed, the modal will be positioned relative to the page (modal behaviour).
+  export let trigger = 'click';
+  // For more advanced usage the reference element can also be passed in as a prop, though usually it would be passed through the slot.
+  export let referenceEl = null;
+  // Default modal positioning.
+  export let style = 'left: 50%; top: 50%; transform: translate(-50%, -50%)';
   export let clickOutside = true;
+  // Render self ahead of time after initial load, when the page is idle?
+  export let prerender = false;
   let className = '';
   export { className as class };
 
-  export let top = null;
-  export let left = null;
-  export let referenceEl = null;
+  // Local bindings
+  let el = null;
+  let markerEl = null;
+  let top = null;
+  let left = null;
+
   function reposition() {
     const rect = referenceEl.getBoundingClientRect();
     top = rect.bottom;
     left = rect.left + rect.width / 2;
   }
+
+  // Rendered element and any background will be portaled out to `#portal`, which prevents `z-index` and CSS transform issues.
+  $: if (el) {
+    const portal = document.getElementById('portal');
+    if (el.previousElementSibling !== markerEl) {
+      portal.appendChild(el.previousElementSibling);
+    }
+    portal.appendChild(el);
+  }
+  // We use a hidden marker element to grab a reference to the trigger/reference elements which
+  // lets us attach/detach event listeners to them without wrapping them in an extra element (which can affect the style of the page).
   $: if (markerEl && !referenceEl && $$slots.reference) referenceEl = markerEl.previousElementSibling;
+  // `referenceEl` prop could be changed at any time. Make sure we react to changes and keep the position up to date.
   $: if (referenceEl) reposition();
-  export let style = 'left: 50%; top: 50%; transform: translate(-50%, -50%)';
+  // If a reference is passed and we have its top/left coords, use them to position the popover element.
+  // TODO: top/bottom/left/right positions + offset.
   $: if (top != null && left != null) style = `top: ${top}px; left: ${left}px; transform: translate(-50%)`;
 
-  // Trigger and event listeners
-  // TODO: Think about the reference/trigger semantics. What happens when reference is passed, but not trigger, vice versa, both passed, or none passed.
-  export let trigger = 'click';
   const triggerEvents = {
     click: [{ name: 'click', fn: toggle }],
     hover: [
@@ -48,13 +65,19 @@
   function removeEventListeners() {
     if (triggerEl) events.forEach(({ name, fn }) => triggerEl.removeEventListener(name, fn));
   }
-  $: triggerEl = markerEl?.previousElementSibling;
+
+  // Determine trigger element: if trigger exists, get that. Otherwise try getting the reference element.
+  let triggerEl = null;
+  $: if (markerEl) triggerEl = markerEl.previousElementSibling;
+  // Set up event listeners
   $: if (triggerEl) addEventListeners();
+  // Cleanup event listeners
   onDestroy(removeEventListeners);
 
   function open() {
     if (referenceEl) reposition();
     visible = true;
+    // TODO: Focus trap
   }
   function close() {
     visible = false;
@@ -64,6 +87,7 @@
     visible ? close() : open();
   }
 
+  // Dispatch events: open, afterOpen, close, afterClose
   $: if (visible) {
     dispatch('open');
     tick().then(() => dispatch('afterOpen'));
@@ -86,9 +110,9 @@
   }}
 />
 
-<slot name="trigger" />
 <slot name="reference" />
-<div data-pomoto-marker bind:this={markerEl} hidden />
+<slot name="trigger" />
+<div data-pomoto-marker bind:this={markerEl} hidden aria-hidden="true" />
 
 {#if prerender ? true : visible}
   <slot name="background" />
@@ -96,12 +120,11 @@
     bind:this={el}
     role="dialog"
     aria-modal="true"
-    class="absolute {className}"
+    class="absolute {className} focus:ring-red-500"
     class:hidden={prerender && !visible}
     {style}
     tabindex={-1}
     on:keyup={event => {
-      console.log(event);
       if (event.key === 'Escape') close();
     }}
   >
