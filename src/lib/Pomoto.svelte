@@ -1,9 +1,20 @@
-<script lang="ts">
+<script>
   import { onMount, onDestroy, createEventDispatcher, tick } from 'svelte';
 
   const dispatch = createEventDispatcher();
 
+  // TODO: Prevent body scrolling
+
   export let visible = false;
+
+  // Accessibility:
+  export let role = 'dialog';
+  // TODO: Aria attributes:
+  // aria-label/aria-labelledby: Added on both trigger and content, for all types of components where it makes sense
+  // aria-describedby: Added on trigger, for all types of components where it makes sense
+  // aria-expanded: Added on trigger, for all types of components, not needed on modals.
+  // aria-haspopup: Added on trigger, _only_ for role="menu"
+
   // Triggers and event listeners:
   // If both a reference element and a trigger element are passed:
   // interacting with the trigger will open/close, and the popover will be positioned relative to the reference.
@@ -33,6 +44,7 @@
   }
 
   // Rendered element and any background will be portaled out to `#portal`, which prevents `z-index` and CSS transform issues.
+  // TODO: Popovers and tooltips should not portal out.
   $: if (el) {
     const portal = document.getElementById('portal');
     if (el.previousElementSibling !== markerEl) {
@@ -55,6 +67,7 @@
       { name: 'mouseenter', fn: open },
       { name: 'mouseleave', fn: close },
     ],
+    // TODO: Focus
     manual: [],
   };
   const events = triggerEvents[trigger];
