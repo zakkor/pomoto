@@ -1,38 +1,11 @@
-# create-svelte
+# Pomoto
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte);
+## Accessibility
 
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
-
-```bash
-# create a new project in the current directory
-npm init svelte@next
-
-# create a new project in my-app
-npm init svelte@next my-app
-```
-
-> Note: the `@next` is temporary
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-Before creating a production version of your app, install an [adapter](https://kit.svelte.dev/docs#adapters) for your target environment. Then:
-
-```bash
-npm run build
-```
-
-> You can preview the built app with `npm run preview`, regardless of whether you installed an adapter. This should _not_ be used to serve your app in production.
+| Component                                                                                                   | Role           | Is focusable | Enter on trigger to open/close | Open/close on focus | Arrow keys move between items | Focus first element     | Focus is trapped inside | Escape closes             | On close focus is restored to previous element |
+| ----------------------------------------------------------------------------------------------------------- | -------------- | ------------ | ------------------------------ | ------------------- | ----------------------------- | ----------------------- | ----------------------- | ------------------------- | ---------------------------------------------- |
+| Tooltip: Can only have text content, without any focusable elements                                         | role="tooltip" | no           | yes                            | yes                 | no                            | n/a (only text content) | n/a                     | yes (due to losing focus) | n/a                                            |
+| Popover: Rich content, but without any focusable elements                                                   | role="tooltip" | no           | yes                            | no                  | no                            | no                      | n/a                     | yes (due to losing focus) | n/a                                            |
+| Popover: Rich content which is less important, modeless, and contains focusable elements                    | role="dialog"  | yes          | yes                            | no                  | no                            | no                      | no                      | yes                       | yes                                            |
+| Modal: Rich content which requires an answer or presents important information, contains focusable elements | role="dialog"  | yes          | yes                            | no                  | no                            | yes                     | yes                     | yes                       | yes                                            |
+| Menu: Interactive content with focusable elements resembling a classic dropdown menu                        | role="menu"    | yes          | yes                            | no                  | yes                           | no                      | no                      | yes                       | yes                                            |
