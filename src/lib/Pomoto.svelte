@@ -4,30 +4,40 @@
   const dispatch = createEventDispatcher();
 
   // TODO: Prevent body scrolling
+  // TODO: Support CSS-only rendering inside Pomoto
+  // TODO: Support focus triggering
 
   export let visible = false;
 
   // Accessibility:
   export let role = 'dialog';
+  export let modal = false;
+  export let focusFirstElement = modal;
+  export let focusTrap = modal;
+  export let label = null;
+  export let description = null;
   // TODO: Aria attributes:
   // aria-label/aria-labelledby: Added on both trigger and content, for all types of components where it makes sense
   // aria-describedby: Added on trigger, for all types of components where it makes sense
   // aria-expanded: Added on trigger, for all types of components, not needed on modals.
   // aria-haspopup: Added on trigger, _only_ for role="menu"
 
+  export let method = 'js';
+
   // Triggers and event listeners:
   // If both a reference element and a trigger element are passed:
   // interacting with the trigger will open/close, and the popover will be positioned relative to the reference.
   // If only a reference element is passed and no trigger element is passed, the reference becomes the trigger (popover behaviour).
   // If only a trigger element is passed and no reference element is passed, the modal will be positioned relative to the page (modal behaviour).
-  export let trigger = 'click';
+  export let trigger = method === 'js' ? ['click'] : [];
+  export let closeOnClickOutside = !modal;
   // For more advanced usage the reference element can also be passed in as a prop, though usually it would be passed through the slot.
   export let referenceEl = null;
   // Default modal positioning.
-  export let style = 'left: 50%; top: 50%; transform: translate(-50%, -50%)';
-  export let clickOutside = true;
-  // Render self ahead of time after initial load, when the page is idle?
+  export let style = modal ? 'left: 50%; top: 50%; transform: translate(-50%, -50%)' : '';
+  // TODO: Render self ahead of time after initial load, when the page is idle?
   export let prerender = false;
+  export let portal = modal;
   let className = '';
   export { className as class };
 
@@ -39,13 +49,13 @@
 
   function reposition() {
     const rect = referenceEl.getBoundingClientRect();
-    top = rect.bottom;
-    left = rect.left + rect.width / 2;
+    top = rect.bottom + window.scrollY;
+    left = rect.left + rect.width / 2 + window.scrollX;
   }
 
   // Rendered element and any background will be portaled out to `#portal`, which prevents `z-index` and CSS transform issues.
-  // TODO: Popovers and tooltips should not portal out.
-  $: if (el) {
+  // Typically, only modals should portal out.
+  $: if (portal && el) {
     const portal = document.getElementById('portal');
     if (el.previousElementSibling !== markerEl) {
       portal.appendChild(el.previousElementSibling);
@@ -70,7 +80,7 @@
     // TODO: Focus
     manual: [],
   };
-  const events = triggerEvents[trigger];
+  const events = trigger.flatMap(t => triggerEvents[t]).filter(Boolean);
   function addEventListeners() {
     removeEventListeners();
     events.forEach(({ name, fn }) => triggerEl.addEventListener(name, fn));
@@ -83,7 +93,7 @@
   let triggerEl = null;
   $: if (markerEl) triggerEl = markerEl.previousElementSibling;
   // Set up event listeners
-  $: if (triggerEl) addEventListeners();
+  $: if (triggerEl && method === 'js') addEventListeners();
   // Cleanup event listeners
   onDestroy(removeEventListeners);
 
@@ -100,12 +110,17 @@
   }
 
   // Modal accessibility: focus first element and trap focus inside modal.
-  function attachFocusTrap() {
+  const focusableSel = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+  function focusFirst() {
     // Focus first focusable element, or dialog element itself.
-    const focusable = el.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    const focusable = el.querySelectorAll(focusableSel);
     const focusEl = focusable[0] || el;
     focusEl.focus();
+  }
 
+  function attachFocusTrap() {
+    const focusable = el.querySelectorAll(focusableSel);
     if (focusable.length === 0) return;
 
     // If focus were to leave the first element, move focus to last element instead.
@@ -151,7 +166,8 @@
   let removeFocusTrap = null;
   $: if (visible) {
     tick().then(() => {
-      removeFocusTrap = attachFocusTrap();
+      if (focusTrap) removeFocusTrap = attachFocusTrap();
+      if (focusFirstElement) focusFirst();
     });
   }
   $: if (!visible) {
@@ -169,30 +185,45 @@
 
 <svelte:window
   on:click={event => {
-    if (clickOutside && visible && !el.contains(event.target)) {
+    if (closeOnClickOutside && visible && !el.contains(event.target)) {
       close();
     }
   }}
 />
 
-<slot name="reference" />
-<slot name="trigger" />
-<div data-pomoto-marker bind:this={markerEl} hidden aria-hidden="true" />
+{#if method === 'css'}
+  <button tabindex={0} aria-label={label} class="group relative">
+    <slot name="reference" />
+    <article
+      bind:this={el}
+      {role}
+      class="invisible opacity-0 group-hover:visible group-hover:opacity-100 group-focus:visible group-focus:opacity-100 absolute bottom-full left-1/2 -translate-x-1/2 w-max transition-opacity {className}"
+      {style}
+      tabindex={-1}
+    >
+      <slot />
+    </article>
+  </button>
+{:else}
+  <slot name="reference" />
+  <slot name="trigger" />
+  <div data-pomoto-marker bind:this={markerEl} hidden aria-hidden="true" />
 
-{#if prerender ? true : visible}
-  <slot name="background" />
-  <article
-    bind:this={el}
-    role="dialog"
-    aria-modal="true"
-    class="absolute {className}"
-    class:hidden={prerender && !visible}
-    {style}
-    tabindex={-1}
-    on:keyup={event => {
-      if (event.key === 'Escape') close();
-    }}
-  >
-    <slot />
-  </article>
+  {#if prerender ? true : visible}
+    <slot name="background" />
+    <article
+      bind:this={el}
+      {role}
+      aria-modal={modal}
+      class="absolute {className}"
+      class:hidden={prerender && !visible}
+      {style}
+      tabindex={-1}
+      on:keyup={event => {
+        if (event.key === 'Escape') close();
+      }}
+    >
+      <slot />
+    </article>
+  {/if}
 {/if}

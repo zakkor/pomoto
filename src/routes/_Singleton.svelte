@@ -21,11 +21,8 @@
   {/each}
 </div>
 
-<Pomoto trigger="hover" referenceEl={hoverEl} class="singleton">
-  <div
-    class="bg-indigo-100 rounded-xl px-3 py-2"
-    transition:fade={{ duration: 200 }}
-  >
+<Pomoto trigger={['hover']} referenceEl={hoverEl} class="singleton">
+  <div class="bg-indigo-100 rounded-xl px-3 py-2" transition:fade={{ duration: 200 }}>
     Hi there, I'm number {active}
   </div>
 </Pomoto>

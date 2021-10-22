@@ -1,10 +1,9 @@
 <script>
-  import { scale, fade, fly } from 'svelte/transition';
+  import { scale, fade } from 'svelte/transition';
   import { sineInOut as easing } from 'svelte/easing';
   import Pomoto from '$lib/Pomoto.svelte';
 
   import Example from './_Example.svelte';
-  import Tooltip from './_Tooltip.svelte';
   import Singleton from './_Singleton.svelte';
   import Button from './_ButtonExample.svelte';
 
@@ -23,7 +22,7 @@
 
 {#if mounted}
   <div class="flex flex-col items-start space-y-16">
-    <Example title="Dropdown">
+    <Example title="Dropdown (JS)">
       <Pomoto>
         <Button slot="reference" class="bg-blue-200 rounded-md p-3">Click me to open</Button>
 
@@ -33,14 +32,36 @@
       </Pomoto>
     </Example>
 
-    <Example title="Tooltip">
-      <Tooltip content="Hello world!">
-        <button>Hover over me</button>
-      </Tooltip>
+    <Example title="Dropdown (CSS)">
+      <Pomoto method="css">
+        <span slot="reference" class="bg-blue-200 rounded-md p-3">Hover over me</span>
+        <div class="flex w-auto bg-gray-700 rounded-lg px-6 py-4" transition:fade|local={{ duration: 100 }}>
+          <p class="text-sm font-medium text-white">Hello world</p>
+        </div>
+      </Pomoto>
+    </Example>
+
+    <Example title="Tooltip (JS)">
+      <Pomoto role="tooltip" trigger={['click', 'hover']}>
+        <button slot="reference">Hover over me</button>
+        <div
+          class="flex w-auto text-sm font-medium text-white bg-black rounded-lg px-2 py-1"
+          transition:scale|local={{ duration: 100 }}
+        >
+          Hello world!
+        </div>
+      </Pomoto>
+    </Example>
+
+    <Example title="Tooltip (CSS)">
+      <Pomoto role="tooltip" method="css" class="bg-black text-white text-sm font-medium rounded-lg py-1 px-2">
+        <span slot="reference">Hover over me</span>
+        Hello world!
+      </Pomoto>
     </Example>
 
     <Example title="Modal">
-      <Pomoto>
+      <Pomoto modal closeOnClickOutside>
         <Button slot="trigger" class="bg-blue-200 rounded-md p-3">Click me to open</Button>
         <div
           class="flex flex-col bg-gray-700 rounded-lg px-10 py-8"
@@ -63,7 +84,7 @@
     </Example>
 
     <Example title="Modal with background">
-      <Pomoto>
+      <Pomoto modal>
         <Button slot="trigger" class="bg-blue-200 rounded-md p-3">Click me to open</Button>
         <div
           slot="background"
@@ -92,6 +113,7 @@
 
     <Example title="Modal events: Perform action on elements after they are mounted">
       <Pomoto
+        modal
         on:open={() => console.log('open')}
         on:afterOpen={() => {
           console.log('afterOpen');
@@ -117,7 +139,7 @@
     </Example>
 
     <Example title="Modal a11y: First element should have focus">
-      <Pomoto>
+      <Pomoto modal>
         <Button slot="trigger" class="bg-blue-200 rounded-md p-3">Click me to open</Button>
         <div
           class="flex flex-col bg-gray-700 rounded-lg px-10 py-8"
@@ -130,7 +152,7 @@
     </Example>
 
     <Example title="Modal a11y: Escape to close">
-      <Pomoto>
+      <Pomoto modal>
         <Button slot="trigger" class="bg-blue-200 rounded-md p-3">Click me to open</Button>
         <div
           class="flex flex-col bg-gray-700 text-white rounded-lg px-10 py-8"
@@ -143,7 +165,7 @@
     </Example>
 
     <Example title="Modal a11y: Focus trap">
-      <Pomoto>
+      <Pomoto modal>
         <Button slot="trigger" class="bg-blue-200 rounded-md p-3">Click me to open</Button>
         <div
           class="flex flex-col bg-gray-700 rounded-lg px-10 py-8 space-y-4"
