@@ -22,19 +22,25 @@
   // aria-expanded: Added on trigger, for all types of components, not needed on modals.
   // aria-haspopup: Added on trigger, _only_ for role="menu"
 
-  export let method = 'js';
+  export let mode = 'js';
 
   // Triggers and event listeners:
+  // TODO: Add support for triggers in CSS mode. Make `click` work in CSS mode.
+  // Triggers will behave completely different depending on mode.
+  export let trigger = mode === 'js' ? ['click'] : [];
+
+  export let closeOnClickOutside = !modal;
+
   // If both a reference element and a trigger element are passed:
   // interacting with the trigger will open/close, and the popover will be positioned relative to the reference.
   // If only a reference element is passed and no trigger element is passed, the reference becomes the trigger (popover behaviour).
   // If only a trigger element is passed and no reference element is passed, the modal will be positioned relative to the page (modal behaviour).
-  export let trigger = method === 'js' ? ['click'] : [];
-  export let closeOnClickOutside = !modal;
   // For more advanced usage the reference element can also be passed in as a prop, though usually it would be passed through the slot.
   export let referenceEl = null;
+
   // Default modal positioning.
   export let style = modal ? 'left: 50%; top: 50%; transform: translate(-50%, -50%)' : '';
+
   // TODO: Render self ahead of time after initial load, when the page is idle?
   export let prerender = false;
   export let portal = modal;
@@ -93,7 +99,7 @@
   let triggerEl = null;
   $: if (markerEl) triggerEl = markerEl.previousElementSibling;
   // Set up event listeners
-  $: if (triggerEl && method === 'js') addEventListeners();
+  $: if (triggerEl && mode === 'js') addEventListeners();
   // Cleanup event listeners
   onDestroy(removeEventListeners);
 
@@ -191,7 +197,7 @@
   }}
 />
 
-{#if method === 'css'}
+{#if mode === 'css'}
   <button tabindex={0} aria-label={label} class="group relative">
     <slot name="reference" />
     <article

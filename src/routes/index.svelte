@@ -33,7 +33,7 @@
     </Example>
 
     <Example title="Dropdown (CSS)">
-      <Pomoto method="css">
+      <Pomoto mode="css">
         <span slot="reference" class="bg-blue-200 rounded-md p-3">Hover over me</span>
         <div class="flex w-auto bg-gray-700 rounded-lg px-6 py-4" transition:fade|local={{ duration: 100 }}>
           <p class="text-sm font-medium text-white">Hello world</p>
@@ -54,7 +54,7 @@
     </Example>
 
     <Example title="Tooltip (CSS)">
-      <Pomoto role="tooltip" method="css" class="bg-black text-white text-sm font-medium rounded-lg py-1 px-2">
+      <Pomoto role="tooltip" mode="css" class="bg-black text-white text-sm font-medium rounded-lg py-1 px-2">
         <span slot="reference">Hover over me</span>
         Hello world!
       </Pomoto>
