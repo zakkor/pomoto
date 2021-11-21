@@ -1,187 +1,65 @@
 <script>
-  import { scale, fade } from 'svelte/transition';
-  import { sineInOut as easing } from 'svelte/easing';
+  import { scale } from 'svelte/transition';
   import Pomoto from '$lib/Pomoto.svelte';
-
-  import Example from './_Example.svelte';
-  import Singleton from './_Singleton.svelte';
-  import Button from './_ButtonExample.svelte';
-
-  let mounted = true;
-
-  let inputEl;
 </script>
 
-<svelte:head>
-  <link href="https://unpkg.com/tailwindcss@2.2.10/dist/tailwind.min.css" rel="stylesheet" />
-</svelte:head>
+<h1>Pomoto</h1>
 
-<button on:click={() => (mounted = !mounted)} class="mb-8">
-  {mounted ? 'Unmount' : 'Mount'} Pomoto
-</button>
+<p class="text-lg">
+  Pomoto (<strong>po</strong>pover, <strong>mo</strong>dal, <strong>to</strong>oltip) is a zero-dependency all-in-one
+  solution you can use to implement any kind of popover-like content, with a focus on <em>performance</em>,
+  <em>developer ergonomics</em>, and <em>accessibility</em>.
+</p>
 
-{#if mounted}
-  <div class="flex flex-col items-start space-y-16">
-    <Example title="Dropdown (JS)">
-      <Pomoto>
-        <Button slot="reference" class="bg-blue-200 rounded-md p-3">Click me to open</Button>
+<p class="text-lg">
+  Check out <a href="/examples">the examples page</a> for some examples of how to implement commonly used UI components.
+</p>
 
-        <div class="flex w-auto bg-gray-700 rounded-lg px-6 py-4" transition:fade|local={{ duration: 100 }}>
-          <p class="text-sm font-medium text-white">Hello world</p>
-        </div>
-      </Pomoto>
-    </Example>
+<h2>Approach</h2>
 
-    <Example title="Dropdown (CSS)">
-      <Pomoto mode="css">
-        <span slot="reference" class="bg-blue-200 rounded-md p-3">Hover over me</span>
-        <div class="flex w-auto bg-gray-700 rounded-lg px-6 py-4" transition:fade|local={{ duration: 100 }}>
-          <p class="text-sm font-medium text-white">Hello world</p>
-        </div>
-      </Pomoto>
-    </Example>
-
-    <Example title="Tooltip (JS)">
-      <Pomoto role="tooltip" trigger={['click', 'hover']}>
-        <button slot="reference">Hover over me</button>
-        <div
-          class="flex w-auto text-sm font-medium text-white bg-black rounded-lg px-2 py-1"
-          transition:scale|local={{ duration: 100 }}
-        >
-          Hello world!
-        </div>
-      </Pomoto>
-    </Example>
-
-    <Example title="Tooltip (CSS)">
-      <Pomoto role="tooltip" mode="css" class="bg-black text-white text-sm font-medium rounded-lg py-1 px-2">
-        <span slot="reference">Hover over me</span>
-        Hello world!
-      </Pomoto>
-    </Example>
-
-    <Example title="Modal">
-      <Pomoto modal closeOnClickOutside>
-        <Button slot="trigger" class="bg-blue-200 rounded-md p-3">Click me to open</Button>
-        <div
-          class="flex flex-col bg-gray-700 rounded-lg px-10 py-8"
-          style="width: 600px"
-          transition:scale|local={{ start: 0.95, duration: 200 }}
-        >
-          <p class="text-2xl font-medium text-white mb-4">Hello world</p>
-          <p class="text-base text-white">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam a euismod velit. Mauris mattis tempor purus
-            blandit tempor. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos.
-            Quisque maximus non massa sit amet faucibus. Cras sed consectetur metus. In hac habitasse platea dictumst.
-            Nulla urna erat, elementum a tortor at, varius tristique felis. Cras in lacus eget orci porta cursus eu a
-            nisi. Proin tortor neque, sollicitudin nec gravida vitae, finibus a eros. Integer faucibus elit et mauris
-            efficitur condimentum. Cras ut diam magna. Etiam augue mi, faucibus nec odio nec, eleifend venenatis dolor.
-            Integer dolor diam, lobortis eget fringilla eget, ullamcorper et est. Sed non est id leo fringilla
-            ullamcorper ut id arcu. Duis vitae dui vitae turpis pretium ullamcorper.
-          </p>
-        </div>
-      </Pomoto>
-    </Example>
-
-    <Example title="Modal with background">
-      <Pomoto modal>
-        <Button slot="trigger" class="bg-blue-200 rounded-md p-3">Click me to open</Button>
-        <div
-          slot="background"
-          class="absolute inset-0 bg-black bg-opacity-50 backdrop-filter backdrop-blur-md"
-          transition:fade|local={{ duration: 250, easing }}
-        />
-        <div
-          class="flex flex-col bg-gray-700 rounded-lg px-10 py-8"
-          style="width: 600px"
-          transition:scale|local={{ start: 0.95, duration: 200 }}
-        >
-          <p class="text-2xl font-medium text-white mb-4">Hello world</p>
-          <p class="text-base text-white">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam a euismod velit. Mauris mattis tempor purus
-            blandit tempor. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos.
-            Quisque maximus non massa sit amet faucibus. Cras sed consectetur metus. In hac habitasse platea dictumst.
-            Nulla urna erat, elementum a tortor at, varius tristique felis. Cras in lacus eget orci porta cursus eu a
-            nisi. Proin tortor neque, sollicitudin nec gravida vitae, finibus a eros. Integer faucibus elit et mauris
-            efficitur condimentum. Cras ut diam magna. Etiam augue mi, faucibus nec odio nec, eleifend venenatis dolor.
-            Integer dolor diam, lobortis eget fringilla eget, ullamcorper et est. Sed non est id leo fringilla
-            ullamcorper ut id arcu. Duis vitae dui vitae turpis pretium ullamcorper.
-          </p>
-        </div>
-      </Pomoto>
-    </Example>
-
-    <Example title="Modal events: Perform action on elements after they are mounted">
-      <Pomoto
-        modal
-        on:open={() => console.log('open')}
-        on:afterOpen={() => {
-          console.log('afterOpen');
-          inputEl.value = 'Hello there';
-        }}
-        on:close={() => console.log('close')}
-        on:afterClose={() => console.log('afterClose')}
-      >
-        <Button slot="trigger" class="bg-blue-200 rounded-md p-3">Click me to open</Button>
-        <div
-          class="flex flex-col bg-gray-700 rounded-lg px-10 py-8"
-          style="width: 600px"
-          transition:scale|local={{ start: 0.95, duration: 200 }}
-        >
-          <input
-            bind:this={inputEl}
-            type="text"
-            class="w-full p-3"
-            placeholder="Input should be automatically focused on modal open"
-          />
-        </div>
-      </Pomoto>
-    </Example>
-
-    <Example title="Modal a11y: First element should have focus">
-      <Pomoto modal>
-        <Button slot="trigger" class="bg-blue-200 rounded-md p-3">Click me to open</Button>
-        <div
-          class="flex flex-col bg-gray-700 rounded-lg px-10 py-8"
-          style="width: 600px"
-          transition:scale|local={{ start: 0.95, duration: 200 }}
-        >
-          <input type="text" class="w-full p-3" placeholder="Input should be automatically focused on modal open" />
-        </div>
-      </Pomoto>
-    </Example>
-
-    <Example title="Modal a11y: Escape to close">
-      <Pomoto modal>
-        <Button slot="trigger" class="bg-blue-200 rounded-md p-3">Click me to open</Button>
-        <div
-          class="flex flex-col bg-gray-700 text-white rounded-lg px-10 py-8"
-          style="width: 600px"
-          transition:scale|local={{ start: 0.95, duration: 200 }}
-        >
-          <h2>Press escape to close modal.</h2>
-        </div>
-      </Pomoto>
-    </Example>
-
-    <Example title="Modal a11y: Focus trap">
-      <Pomoto modal>
-        <Button slot="trigger" class="bg-blue-200 rounded-md p-3">Click me to open</Button>
-        <div
-          class="flex flex-col bg-gray-700 rounded-lg px-10 py-8 space-y-4"
-          style="width: 600px"
-          transition:scale|local={{ start: 0.95, duration: 200 }}
-        >
-          <input type="text" class="w-full p-3" placeholder="Tab through inputs" />
-          <input type="text" class="w-full p-3" placeholder="Tab through inputs" />
-          <input type="text" class="w-full p-3" placeholder="Tab through inputs" />
-          <input type="text" class="w-full p-3" placeholder="Tab through inputs" />
-        </div>
-      </Pomoto>
-    </Example>
-
-    <Example title="Singleton">
-      <Singleton />
-    </Example>
+<pre>
+  <code>
+    {`<Pomoto>
+  <button slot="trigger">Click me</button>
+  <div>
+    Content goes here.
   </div>
-{/if}
+</Pomoto>`}
+  </code>
+</pre>
+
+<div class="bg-gray-50 border h-[600px] w-full px-8 pt-[200px]">
+  <p class="w-[390px]">
+    Bill Murray <em>(born September 21, 1950)</em> is an American actor, comedian, and writer. Known for his <Pomoto
+      role="tooltip"
+      placement="top"
+      offset={[0, -8]}
+    >
+      <button slot="reference" class="font-semibold !text-pink-500 underline"> deadpan delivery.</button>
+      <div
+        class="bg-white w-[400px] border rounded-xl shadow-lg px-6 py-4"
+        transition:scale|local={{ start: 0.95, duration: 200 }}
+      >
+        <strong>Deadpan</strong>, dry humour, or dry-wit humour is the deliberate display of emotional neutrality or no
+        emotion, commonly as a form of comedic delivery to contrast with the ridiculousness or absurdity of the subject
+        matter.
+      </div>
+    </Pomoto>
+  </p>
+</div>
+
+<h2>Rendering modes</h2>
+
+<h2>Props</h2>
+
+<h2>Events</h2>
+
+<h2>Slots</h2>
+
+<ul>
+  <li>Trigger: aslkdjaksdj asda</li>
+  <li>Reference: asjdklajs dalskjd</li>
+  <li>Background</li>
+</ul>
+
+<h2>Accessibility</h2>

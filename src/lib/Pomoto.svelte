@@ -1,33 +1,28 @@
 <script>
   import { onMount, onDestroy, createEventDispatcher, tick } from 'svelte';
+  import Element from './Element.svelte';
 
   const dispatch = createEventDispatcher();
 
-  // TODO: Prevent body scrolling
-  // TODO: Support CSS-only rendering inside Pomoto
-  // TODO: Support focus triggering
-
   export let visible = false;
+  export let mode = 'js';
+
+  // Triggers and event listeners:
+  // In 'css' mode the only triggers that exist (and are forced enabled) are 'focus' + 'hover'.
+  // TODO: Think of a way to make triggers configurable in CSS mode too and how to make them work together.
+  export let trigger = mode === 'js' ? ['click'] : [];
+
+  export let zIndex = 'z-10';
 
   // Accessibility:
   export let role = 'dialog';
   export let modal = false;
   export let focusFirstElement = modal;
   export let focusTrap = modal;
-  export let label = null;
-  export let description = null;
-  // TODO: Aria attributes:
-  // aria-label/aria-labelledby: Added on both trigger and content, for all types of components where it makes sense
-  // aria-describedby: Added on trigger, for all types of components where it makes sense
-  // aria-expanded: Added on trigger, for all types of components, not needed on modals.
-  // aria-haspopup: Added on trigger, _only_ for role="menu"
-
-  export let mode = 'js';
-
-  // Triggers and event listeners:
-  // TODO: Add support for triggers in CSS mode. Make `click` work in CSS mode.
-  // Triggers will behave completely different depending on mode.
-  export let trigger = mode === 'js' ? ['click'] : [];
+  export let returnFocus = modal;
+  export let ariaLabel = null;
+  export let ariaDescribedBy = null;
+  export let ariaHasPopup = role === 'menu';
 
   export let closeOnClickOutside = !modal;
 
@@ -39,7 +34,7 @@
   export let referenceEl = null;
 
   // Default modal positioning.
-  export let style = modal ? 'left: 50%; top: 50%; transform: translate(-50%, -50%)' : '';
+  // export let style = $$slots.reference ? 'margin: auto' : 'position: absolute';
 
   // TODO: Render self ahead of time after initial load, when the page is idle?
   export let prerender = false;
@@ -47,16 +42,63 @@
   let className = '';
   export { className as class };
 
+  /** @type {'top' | 'right' | 'bottom' | 'left'} */
+  export let placement = 'top';
+  export let offset = [0, 0]; // [x, y]
+
   // Local bindings
   let el = null;
   let markerEl = null;
   let top = null;
   let left = null;
+  let translateX = null;
+  let translateY = null;
 
-  function reposition() {
+  function repositionAbsolute() {
     const rect = referenceEl.getBoundingClientRect();
-    top = rect.bottom + window.scrollY;
-    left = rect.left + rect.width / 2 + window.scrollX;
+    const [offsetX, offsetY] = offset;
+    switch (placement) {
+      case 'top':
+        left = rect.left + rect.width / 2 + window.scrollX + offsetX;
+        translateX = '-50%';
+        top = rect.top + window.scrollY + offsetY;
+        translateY = '-100%';
+        break;
+      case 'bottom':
+        top = rect.bottom + window.scrollY;
+        left = rect.left + rect.width / 2 + window.scrollX;
+        break;
+      default:
+        break;
+    }
+  }
+
+  function repositionRelative() {
+    const [offsetX, offsetY] = offset;
+    switch (placement) {
+      case 'top':
+        left = `calc(50% + ${offsetX}px)`;
+        translateX = '-50%';
+        top = `${offsetY}px`;
+        translateY = '-100%';
+        break;
+      case 'bottom':
+        left = `calc(50% + ${offsetX}px)`;
+        translateX = '-50%';
+        top = `calc(100% + ${offsetY}px)`;
+        break;
+      case 'left':
+        left = `${offsetX}px`;
+        translateX = '-100%';
+        top = `calc(50% + ${offsetY}px)`;
+        translateY = '-50%';
+        break;
+      case 'right':
+        left = `calc(100% + ${offsetX}px)`;
+        top = `calc(50% + ${offsetY}px)`;
+        translateY = '-50%';
+        break;
+    }
   }
 
   // Rendered element and any background will be portaled out to `#portal`, which prevents `z-index` and CSS transform issues.
@@ -70,12 +112,19 @@
   }
   // We use a hidden marker element to grab a reference to the trigger/reference elements which
   // lets us attach/detach event listeners to them without wrapping them in an extra element (which can affect the style of the page).
-  $: if (markerEl && !referenceEl && $$slots.reference) referenceEl = markerEl.previousElementSibling;
+  $: if (mode === 'js' && markerEl && !referenceEl && $$slots.reference) referenceEl = markerEl.previousElementSibling;
   // `referenceEl` prop could be changed at any time. Make sure we react to changes and keep the position up to date.
-  $: if (referenceEl) reposition();
+  $: if (mode === 'js' && referenceEl) repositionAbsolute();
+  $: if (mode === 'css' && $$slots.reference) repositionRelative();
   // If a reference is passed and we have its top/left coords, use them to position the popover element.
-  // TODO: top/bottom/left/right positions + offset.
-  $: if (top != null && left != null) style = `top: ${top}px; left: ${left}px; transform: translate(-50%)`;
+  let positionStyle = '';
+  $: if (top != null && left != null) {
+    positionStyle = `position: absolute; top: ${top}${typeof top === 'number' ? 'px' : ''}; left: ${left}${
+      typeof left === 'number' ? 'px' : ''
+    }; transform: translate(${translateX || 0}, ${translateY || 0})`;
+  } else {
+    positionStyle = `margin: auto`;
+  }
 
   const triggerEvents = {
     click: [{ name: 'click', fn: toggle }],
@@ -83,7 +132,10 @@
       { name: 'mouseenter', fn: open },
       { name: 'mouseleave', fn: close },
     ],
-    // TODO: Focus
+    focus: [
+      { name: 'focus', fn: open },
+      { name: 'blur', fn: close },
+    ],
     manual: [],
   };
   const events = trigger.flatMap(t => triggerEvents[t]).filter(Boolean);
@@ -104,7 +156,7 @@
   onDestroy(removeEventListeners);
 
   function open() {
-    if (referenceEl) reposition();
+    if (mode === 'js' && referenceEl) repositionAbsolute();
     visible = true;
   }
   function close() {
@@ -180,7 +232,7 @@
     // Cleanup focus trap handlers.
     removeFocusTrap?.();
     // When modal closes, return focus to the trigger element.
-    triggerEl?.focus();
+    if (returnFocus) triggerEl?.focus();
   }
 
   onMount(() => {
@@ -198,38 +250,59 @@
 />
 
 {#if mode === 'css'}
-  <button tabindex={0} aria-label={label} class="group relative">
-    <slot name="reference" />
-    <article
-      bind:this={el}
+  <slot name="trigger" />
+
+  {#if $$slots.reference}
+    <div class="relative">
+      <slot name="reference" />
+      <Element
+        bind:el
+        {role}
+        {modal}
+        class="{className} {zIndex} invisible opacity-0 absolute w-max transition-opacity"
+        style={positionStyle}
+        on:close={close}
+      >
+        <slot />
+      </Element>
+    </div>
+  {/if}
+  {#if $$slots.trigger}
+    <Element
+      bind:el
       {role}
-      class="invisible opacity-0 group-hover:visible group-hover:opacity-100 group-focus:visible group-focus:opacity-100 absolute bottom-full left-1/2 -translate-x-1/2 w-max transition-opacity {className}"
-      {style}
-      tabindex={-1}
+      {modal}
+      class="{className} {zIndex} invisible opacity-0 absolute w-max transition-opacity"
+      style={positionStyle}
+      on:close={close}
     >
       <slot />
-    </article>
-  </button>
+    </Element>
+  {/if}
 {:else}
   <slot name="reference" />
   <slot name="trigger" />
   <div data-pomoto-marker bind:this={markerEl} hidden aria-hidden="true" />
 
   {#if prerender ? true : visible}
-    <slot name="background" />
-    <article
-      bind:this={el}
-      {role}
-      aria-modal={modal}
-      class="absolute {className}"
-      class:hidden={prerender && !visible}
-      {style}
-      tabindex={-1}
-      on:keyup={event => {
-        if (event.key === 'Escape') close();
-      }}
-    >
+    <slot name="bg" />
+    <Element bind:el bind:visible {role} {modal} class="{className} {zIndex}" {prerender} style={positionStyle} on:close={close}>
       <slot />
-    </article>
+    </Element>
   {/if}
 {/if}
+
+<style global>
+  [slot='reference'] + article:hover,
+  [slot='reference'] + article:focus,
+  [slot='reference']:hover + article,
+  [slot='reference']:focus + article {
+    @apply visible opacity-100;
+  }
+  [slot='trigger'] + article:hover,
+  [slot='trigger'] + article:focus,
+  [slot='trigger']:hover + article,
+  [slot='trigger']:focus + article {
+    @apply visible opacity-100;
+  }
+</style>

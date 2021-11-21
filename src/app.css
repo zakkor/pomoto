@@ -2,3 +2,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+#portal {
+  @apply fixed inset-0 flex pointer-events-none;
+}
+
+#portal > * {
+  @apply pointer-events-auto;
+}

@@ -2,4 +2,6 @@
   import '../app.css';
 </script>
 
-<slot />
+<main class="prose container flex flex-col items-start mx-auto py-8">
+  <slot />
+</main>
